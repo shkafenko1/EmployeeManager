@@ -1,4 +1,4 @@
-buildscript {
+	buildscript {
 	repositories {
 		mavenCentral()
 	}
@@ -12,6 +12,7 @@ plugins {
 	id 'org.springframework.boot' version '3.2.2'
 	id 'io.spring.dependency-management' version '1.1.4'
 	id 'com.avast.gradle.docker-compose' version '0.17.6'
+	id "org.sonarqube" version "6.0.1.5171"
 }
 
 group = 'by.koronatech'
@@ -49,3 +50,11 @@ jar {
 		attributes 'Main-Class': 'by.koronatech.office.OfficeApplication'
 	}
 }
+
+	sonar {
+		properties {
+			property "sonar.projectKey", "shkafenko1_EmployeeManager"
+			property "sonar.organization", "shkafenko1"
+			property "sonar.host.url", "https://sonarcloud.io"
+		}
+	}
