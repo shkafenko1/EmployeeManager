@@ -12,21 +12,21 @@
 
     Клонируйте репозиторий:
 
-git clone https://github.com/ваш_пользователь/EmployeeManager.git
+        git clone https://github.com/ваш_пользователь/EmployeeManager.git
 
-Перейдите в директорию проекта:
+    Перейдите в директорию проекта:
 
-cd EmployeeManager
+        cd EmployeeManager
 
-Соберите проект с помощью Gradle:
+    Соберите проект с помощью Gradle:
 
-    ./gradlew build
+        ./gradlew build
 
 ## Использование
 
-После сборки проекта вы можете запустить приложение командой:
+    После сборки проекта вы можете запустить приложение командой:
 
-java -jar build/libs/EmployeeManager.jar
+    java -jar build/libs/EmployeeManager.jar
 
 ## Tребования
 
@@ -35,4 +35,4 @@ java -jar build/libs/EmployeeManager.jar
 
 ## Вклад
 
-Если вы хотите внести вклад в проект, пожалуйста, создайте форк репозитория, внесите изменения и отправьте pull request.
+    Если вы хотите внести вклад в проект, пожалуйста, создайте форк репозитория, внесите изменения и отправьте pull request.
