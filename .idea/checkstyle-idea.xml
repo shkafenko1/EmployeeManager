@@ -5,23 +5,11 @@
     <scanScope>JavaOnly</scanScope>
     <copyLibs>true</copyLibs>
     <option name="thirdPartyClasspath" />
-    <option name="activeLocationIds">
-      <option value="2ac97290-25dd-403e-9d32-3e8f4cd5b486" />
-    </option>
+    <option name="activeLocationIds" />
     <option name="locations">
       <list>
         <ConfigurationLocation id="bundled-sun-checks" type="BUNDLED" scope="All" description="Sun Checks">(bundled)</ConfigurationLocation>
         <ConfigurationLocation id="bundled-google-checks" type="BUNDLED" scope="All" description="Google Checks">(bundled)</ConfigurationLocation>
-        <ConfigurationLocation id="2ac97290-25dd-403e-9d32-3e8f4cd5b486" type="LOCAL_FILE" scope="All" description="Super pro max checkstyle">
-          $PROJECT_DIR$/../Plugins/google_checks.xml
-          <option name="properties">
-            <map>
-              <entry key="org.checkstyle.google.severity" value="warning" />
-              <entry key="org.checkstyle.google.suppressionfilter.config" value="checkstyle-suppressions.xml" />
-              <entry key="org.checkstyle.google.suppressionxpathfilter.config" value="checkstyle-xpath-suppressions.xml" />
-            </map>
-          </option>
-        </ConfigurationLocation>
       </list>
     </option>
   </component>
