@@ -1,25 +1,13 @@
 package by.koronatech.office.core.repository;
 
-import by.koronatech.office.core.Department;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.Getter;
+import by.koronatech.office.core.model.Department;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Getter
-public class DepartmentRepository {
+public interface DepartmentRepository extends JpaRepository<Department, Long> {
+    boolean existsByName(String name);
 
-    private final Map<Integer, Department> departments = new HashMap<>();
-
-    public void addDepartment(Department department) {
-        departments.put(department.getId(), department);
-    }
-
-    public Department findDepartmentByName(String name) {
-        return departments
-                .values()
-                .stream()
-                .filter(d -> d.getName().equals(name)).findFirst().orElse(null);
-    }
+    Optional<Department> findByName(String name);
 }

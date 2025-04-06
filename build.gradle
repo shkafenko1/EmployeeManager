@@ -30,9 +30,13 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-autoconfigure'
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
 
 	compileOnly 'org.projectlombok:lombok'
 
+	implementation 'org.postgresql:postgresql:42.7.2'
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'

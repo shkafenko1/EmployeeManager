@@ -2,64 +2,21 @@ package by.koronatech.office.core.service;
 
 import by.koronatech.office.api.dto.CreateEmployeeDto;
 import by.koronatech.office.api.dto.EmployeeDto;
-import by.koronatech.office.core.mapper.CreateEmployeeMapper;
-import by.koronatech.office.core.mapper.EmployeeMapper;
-import by.koronatech.office.core.repository.DepartmentRepository;
-import by.koronatech.office.core.repository.EmployeeRepository;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Service;
 
-@Service
-@AllArgsConstructor
-public class EmployeeService implements BaseEmployeeService {
+public interface EmployeeService {
 
-    private final EmployeeRepository employeeRepository;
-    private final DepartmentRepository departmentRepository;
+    EmployeeDto createEmployee(CreateEmployeeDto employeeDto);
 
-    private final EmployeeMapper employeeMapper;
-    private final CreateEmployeeMapper createEmployeeMapper;
+    List<EmployeeDto> getAllEmployees();
 
-    @Override
-    public EmployeeDto createEmployee(CreateEmployeeDto createEmployeeDto) {
-        employeeRepository
-                .addEmployee(createEmployeeMapper
-                        .toEntity(createEmployeeDto, departmentRepository));
-        return employeeMapper
-                .toDto(createEmployeeMapper
-                        .toEntity(createEmployeeDto, departmentRepository));
-    }
+    List<EmployeeDto> findAllEmployeesByDepartment(String department);
 
-    @Override
-    public List<EmployeeDto> findAllEmployeesByDepartment(String department) {
-        return employeeMapper
-                .toDtos(employeeRepository.getEmployees().values().stream().toList())
-                .stream()
-                .filter(employee -> employee.getDepartmentName().equals(department))
-                .toList();
-    }
+    EmployeeDto setManagerEmployee(Long employeeId);
 
-    @Override
-    public EmployeeDto setManagerEmployee(int employeeId) {
-        employeeRepository.findEmployeeById(employeeId).setManager(true);
-        return employeeMapper.toDto(employeeRepository.findEmployeeById(employeeId));
-    }
+    EmployeeDto updateEmployee(Long id, EmployeeDto employeeDto);
 
-    @Override
-    public EmployeeDto updateEmployee(int id, EmployeeDto employeeDto) {
-        return employeeMapper
-                .toDto(employeeMapper
-                        .merge(employeeRepository
-                                .findEmployeeById(id), employeeDto));
-    }
+    EmployeeDto findEmployeeById(Long employeeId);
 
-    @Override
-    public void deleteEmployee(int employeeId) {
-        employeeRepository.deleteEmployee(employeeId);
-    }
-
-    @Override
-    public EmployeeDto findEmployeeById(int employeeId) {
-        return employeeMapper.toDto(employeeRepository.findEmployeeById(employeeId));
-    }
+    void deleteEmployee(Long employeeId);
 }

@@ -11,7 +11,6 @@ import lombok.Setter;
 @EqualsAndHashCode
 @Builder
 public class CreateEmployeeDto {
-    private int id;
     private String name;
     private BigDecimal salary;
     private String departmentName;

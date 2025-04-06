@@ -1,17 +1,17 @@
-package by.koronatech.office.core;
+package by.koronatech.office.api.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Setter
 @Getter
-@Builder
 @AllArgsConstructor
-@ToString
-public class Department {
-    private int id;
+@EqualsAndHashCode
+@Builder
+public class CompanyDto {
     private String name;
+    private String location;
 }

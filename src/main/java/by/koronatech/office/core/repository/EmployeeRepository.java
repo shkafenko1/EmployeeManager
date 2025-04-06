@@ -1,25 +1,13 @@
 package by.koronatech.office.core.repository;
 
-import by.koronatech.office.core.Employee;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.Getter;
+import by.koronatech.office.core.model.Employee;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Getter
-public class EmployeeRepository {
-    private final Map<Integer, Employee> employees = new HashMap<>();
-
-    public Employee findEmployeeById(int id) {
-        return employees.get(id);
-    }
-
-    public void addEmployee(Employee employee) {
-        employees.put(employee.getId(), employee);
-    }
-
-    public void deleteEmployee(int id) {
-        employees.remove(id);
-    }
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+    // Corrected method name to query departments' IDs
+    Page<Employee> findEmployeesByDepartments_Id(long id, Pageable pageable);
 }

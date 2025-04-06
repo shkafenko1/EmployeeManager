@@ -12,6 +12,5 @@ import lombok.Setter;
 @EqualsAndHashCode
 @Builder
 public class DepartmentDto {
-    private int id;
     private String name;
 }
