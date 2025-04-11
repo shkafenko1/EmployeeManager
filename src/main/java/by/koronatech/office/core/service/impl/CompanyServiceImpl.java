@@ -24,7 +24,8 @@ public class CompanyServiceImpl implements CompanyService  {
 
     @Override
     public CompanyDto getCompanyById(Long id) {
-        Company company = companyRepository.findById(id).orElseThrow(() -> new RuntimeException("Company not found by id" + id));
+        Company company = companyRepository.findById(id).orElseThrow(()
+                -> new RuntimeException("Company not found by id" + id));
         return companyMapper.toDto(company);
     }
 

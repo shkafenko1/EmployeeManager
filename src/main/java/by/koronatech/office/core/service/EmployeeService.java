@@ -2,6 +2,8 @@ package by.koronatech.office.core.service;
 
 import by.koronatech.office.api.dto.CreateEmployeeDto;
 import by.koronatech.office.api.dto.EmployeeDto;
+import by.koronatech.office.api.dto.UpdateDto;
+
 import java.util.List;
 
 public interface EmployeeService {
@@ -12,9 +14,7 @@ public interface EmployeeService {
 
     List<EmployeeDto> findAllEmployeesByDepartment(String department);
 
-    EmployeeDto setManagerEmployee(Long employeeId);
-
-    EmployeeDto updateEmployee(Long id, EmployeeDto employeeDto);
+    EmployeeDto updateEmployee(Long id, UpdateDto employeeDto);
 
     EmployeeDto findEmployeeById(Long employeeId);
 

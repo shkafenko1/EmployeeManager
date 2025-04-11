@@ -1,17 +1,19 @@
 package by.koronatech.office.api.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
+
 @Setter
 @Getter
-@AllArgsConstructor
 @EqualsAndHashCode
 @Builder
-public class DepartmentDto {
-    private String company;
+public class UpdateDto {
     private String name;
+    private BigDecimal salary;
+    private boolean manager = false; // Default value
 }

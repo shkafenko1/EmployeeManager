@@ -6,11 +6,11 @@ import java.util.List;
 public interface CompanyService {
     List<CompanyDto> getAllCompanies();
 
-   CompanyDto getCompanyById(Long id);
+    CompanyDto getCompanyById(Long id);
 
-   CompanyDto createCompany(CompanyDto companyDto);
+    CompanyDto createCompany(CompanyDto companyDto);
 
-   CompanyDto updateCompany(Long id, CompanyDto updatedCompanyDto);
+    CompanyDto updateCompany(Long id, CompanyDto updatedCompanyDto);
 
-   void deleteCompany(Long companyId);
+    void deleteCompany(Long companyId);
 }

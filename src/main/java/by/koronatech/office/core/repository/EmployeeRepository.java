@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-    // Corrected method name to query departments' IDs
-    Page<Employee> findEmployeesByDepartments_Id(long id, Pageable pageable);
+    Page<Employee> findByEmployeeDepartmentsDepartmentName(
+            String departmentName,
+            Pageable pageable
+    );
 }
