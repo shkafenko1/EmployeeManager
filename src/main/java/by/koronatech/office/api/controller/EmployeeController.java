@@ -33,9 +33,9 @@ public class EmployeeController {
     @Operation(summary = "Получить список всех сотрудников",
             description = "Возвращает список всех зарегистрированных сотрудников.")
 
-            @ApiResponse(responseCode = "200", description = "Список сотрудников успешно получен",
-                    content = @Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = EmployeeDto.class))))
+    @ApiResponse(responseCode = "200", description = "Список сотрудников успешно получен",
+            content = @Content(mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = EmployeeDto.class))))
 
     public List<EmployeeDto> getAllEmployees() {
         return employeeService.getAllEmployees();
@@ -46,10 +46,10 @@ public class EmployeeController {
     @Operation(summary = "Создать нового сотрудника",
             description = "Создает нового сотрудника с указанными данными.")
 
-            @ApiResponse(responseCode = "201", description = "Сотрудник успешно создан",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmployeeDto.class)))
-            @ApiResponse(responseCode = "400", description = "Некорректные данные для создания сотрудника")
+    @ApiResponse(responseCode = "201", description = "Сотрудник успешно создан",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = EmployeeDto.class)))
+    @ApiResponse(responseCode = "400", description = "Некорректные данные для создания сотрудника")
 
     public EmployeeDto createEmployee(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -63,10 +63,10 @@ public class EmployeeController {
     @Operation(summary = "Найти сотрудников по отделу",
             description = "Возвращает сотрудников в указанном отделе.")
 
-            @ApiResponse(responseCode = "200", description = "Сотрудники найдены",
-                    content = @Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = EmployeeDto.class))))
-            @ApiResponse(responseCode = "400", description = "Некорректное название отдела")
+    @ApiResponse(responseCode = "200", description = "Сотрудники найдены",
+            content = @Content(mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = EmployeeDto.class))))
+    @ApiResponse(responseCode = "400", description = "Некорректное название отдела")
 
     public List<EmployeeDto> findAllEmployeesByDepartment(
             @Parameter(description = "Название отдела", required = true, example = "Разработка")
@@ -78,11 +78,11 @@ public class EmployeeController {
     @Operation(summary = "Обновить сотрудника",
             description = "Обновляет данные сотрудника по его ID.")
 
-            @ApiResponse(responseCode = "200", description = "Сотрудник успешно обновлен",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmployeeDto.class)))
-            @ApiResponse(responseCode = "400", description = "Некорректные данные или ID")
-            @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
+    @ApiResponse(responseCode = "200", description = "Сотрудник успешно обновлен",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = EmployeeDto.class)))
+    @ApiResponse(responseCode = "400", description = "Некорректные данные или ID")
+    @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
 
     public EmployeeDto updateEmployee(
             @Parameter(description = "ID сотрудника", required = true, example = "1")
@@ -99,9 +99,9 @@ public class EmployeeController {
     @Operation(summary = "Удалить сотрудника",
             description = "Удаляет сотрудника по его ID.")
 
-            @ApiResponse(responseCode = "204", description = "Сотрудник успешно удален")
-            @ApiResponse(responseCode = "400", description = "Некорректный ID")
-            @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
+    @ApiResponse(responseCode = "204", description = "Сотрудник успешно удален")
+    @ApiResponse(responseCode = "400", description = "Некорректный ID")
+    @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
 
     public void deleteEmployee(
             @Parameter(description = "ID сотрудника", required = true, example = "1")
@@ -113,11 +113,11 @@ public class EmployeeController {
     @Operation(summary = "Получить сотрудника по ID",
             description = "Возвращает данные сотрудника по его ID.")
 
-            @ApiResponse(responseCode = "200", description = "Сотрудник найден",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmployeeDto.class)))
-            @ApiResponse(responseCode = "400", description = "Некорректный ID")
-            @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
+    @ApiResponse(responseCode = "200", description = "Сотрудник найден",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = EmployeeDto.class)))
+    @ApiResponse(responseCode = "400", description = "Некорректный ID")
+    @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
 
     public EmployeeDto findEmployeeById(
             @Parameter(description = "ID сотрудника", required = true, example = "1")
