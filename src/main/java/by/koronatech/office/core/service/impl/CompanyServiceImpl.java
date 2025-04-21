@@ -2,6 +2,7 @@ package by.koronatech.office.core.service.impl;
 
 import by.koronatech.office.api.dto.CompanyDto;
 import by.koronatech.office.api.dto.EmployeeDto;
+import by.koronatech.office.core.exceptions.EntityNotFound;
 import by.koronatech.office.core.mapper.CompanyMapper;
 import by.koronatech.office.core.model.Company;
 import by.koronatech.office.core.model.Employee;
@@ -27,7 +28,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     public CompanyDto getCompanyById(Long id) {
         Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Company not found by id: " + id));
+                .orElseThrow(() -> new EntityNotFound("Company not found by id: " + id));
         return companyMapper.toDto(company);
     }
 
@@ -41,7 +42,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     public CompanyDto updateCompany(Long id, CompanyDto companyDto) {
         Company existingCompany = companyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Company not found by id: " + id));
+                .orElseThrow(() -> new EntityNotFound("Company not found by id: " + id));
         Company updatedCompany = companyMapper.toEntity(companyDto);
         updatedCompany.setId(existingCompany.getId());
         Company savedCompany = companyRepository.save(updatedCompany);

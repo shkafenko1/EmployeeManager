@@ -29,7 +29,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public DepartmentDto getDepartmentById(Long id) {
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFound("Department not found with id: " + id));
         return departmentMapper.toDto(department);
     }
 
@@ -45,9 +45,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     public DepartmentDto updateDepartment(Long id, DepartmentDto updatedDepartmentDto) {
         Department existingDepartment = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFound("Department not found with id: " + id));
 
-        // Update fields manually
         existingDepartment.setName(updatedDepartmentDto.getName());
         Company company = companyRepository.findByName(updatedDepartmentDto.getCompany())
                 .orElseThrow(() -> new EntityNotFound("Company not found: "
