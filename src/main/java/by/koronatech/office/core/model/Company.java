@@ -1,7 +1,6 @@
 package by.koronatech.office.core.model;
 
 import jakarta.persistence.*;
-
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

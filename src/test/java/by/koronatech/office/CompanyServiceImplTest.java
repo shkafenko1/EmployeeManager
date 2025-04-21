@@ -3,6 +3,7 @@ package by.koronatech.office;
 import by.koronatech.office.api.dto.CompanyDto;
 import by.koronatech.office.api.dto.EmployeeDto;
 import by.koronatech.office.core.exceptions.EntityNotFound;
+import by.koronatech.office.core.exceptions.HttpStatusException;
 import by.koronatech.office.core.mapper.CompanyMapper;
 import by.koronatech.office.core.model.Company;
 import by.koronatech.office.core.model.Employee;
@@ -73,6 +74,16 @@ class CompanyServiceImplTest {
     }
 
     @Test
+    void getAllCompanies_shouldThrowHttpStatusExceptionOnError() {
+        when(companyRepository.findAll()).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.getAllCompanies());
+        assertEquals(500, exception.getStatusCode());
+        verify(companyRepository).findAll();
+        verify(companyMapper, never()).toDtos(any());
+    }
+
+    @Test
     void getCompanyById_shouldReturnCompany() {
         when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
         when(companyMapper.toDto(company)).thenReturn(companyDto);
@@ -85,10 +96,29 @@ class CompanyServiceImplTest {
     }
 
     @Test
-    void getCompanyById_shouldThrowEntityNotFound() {
+    void getCompanyById_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.getCompanyById(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findById(any());
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void getCompanyById_shouldThrowHttpStatusExceptionForNotFound() {
         when(companyRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFound.class, () -> companyService.getCompanyById(1L));
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.getCompanyById(1L));
+        assertEquals(404, exception.getStatusCode());
+        verify(companyRepository).findById(1L);
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void getCompanyById_shouldThrowHttpStatusExceptionOnError() {
+        when(companyRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.getCompanyById(1L));
+        assertEquals(500, exception.getStatusCode());
         verify(companyRepository).findById(1L);
         verify(companyMapper, never()).toDto(any());
     }
@@ -105,6 +135,27 @@ class CompanyServiceImplTest {
         verify(companyMapper).toEntity(companyDto);
         verify(companyRepository).save(company);
         verify(companyMapper).toDto(company);
+    }
+
+    @Test
+    void createCompany_shouldThrowHttpStatusExceptionForNullDto() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.createCompany(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyMapper, never()).toEntity(any());
+        verify(companyRepository, never()).save(any());
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void createCompany_shouldThrowHttpStatusExceptionOnError() {
+        when(companyMapper.toEntity(companyDto)).thenReturn(company);
+        when(companyRepository.save(company)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.createCompany(companyDto));
+        assertEquals(500, exception.getStatusCode());
+        verify(companyMapper).toEntity(companyDto);
+        verify(companyRepository).save(company);
+        verify(companyMapper, never()).toDto(any());
     }
 
     @Test
@@ -129,22 +180,90 @@ class CompanyServiceImplTest {
     }
 
     @Test
-    void updateCompany_shouldThrowEntityNotFound() {
+    void updateCompany_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.updateCompany(null, companyDto));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findById(any());
+        verify(companyMapper, never()).toEntity(any());
+        verify(companyRepository, never()).save(any());
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void updateCompany_shouldThrowHttpStatusExceptionForNullDto() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.updateCompany(1L, null));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findById(any());
+        verify(companyMapper, never()).toEntity(any());
+        verify(companyRepository, never()).save(any());
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void updateCompany_shouldThrowHttpStatusExceptionForNotFound() {
         when(companyRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFound.class, () -> companyService.updateCompany(1L, companyDto));
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.updateCompany(1L, companyDto));
+        assertEquals(404, exception.getStatusCode());
         verify(companyRepository).findById(1L);
         verify(companyMapper, never()).toEntity(any());
         verify(companyRepository, never()).save(any());
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void updateCompany_shouldThrowHttpStatusExceptionOnError() {
+        when(companyRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.updateCompany(1L, companyDto));
+        assertEquals(500, exception.getStatusCode());
+        verify(companyRepository).findById(1L);
+        verify(companyMapper, never()).toEntity(any());
+        verify(companyRepository, never()).save(any());
+        verify(companyMapper, never()).toDto(any());
     }
 
     @Test
     void deleteCompany_shouldDeleteCompany() {
-        doNothing().when(companyRepository).deleteById(1L);
+        Long companyId = 1L;
+        when(companyRepository.existsById(companyId)).thenReturn(true);
+        doNothing().when(companyRepository).deleteById(companyId);
 
-        companyService.deleteCompany(1L);
+        companyService.deleteCompany(companyId);
 
-        verify(companyRepository).deleteById(1L);
+        verify(companyRepository, times(1)).existsById(companyId);
+        verify(companyRepository, times(1)).deleteById(companyId);
+        verifyNoMoreInteractions(companyRepository);
+    }
+
+    @Test
+    void deleteCompany_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.deleteCompany(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).existsById(any());
+        verify(companyRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteCompany_shouldThrowHttpStatusExceptionForNotFound() {
+        Long companyId = 1L;
+        when(companyRepository.existsById(companyId)).thenReturn(false);
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.deleteCompany(companyId));
+        assertEquals(404, exception.getStatusCode());
+        verify(companyRepository).existsById(companyId);
+        verify(companyRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteCompany_shouldThrowHttpStatusExceptionOnError() {
+        Long companyId = 1L;
+        when(companyRepository.existsById(companyId)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.deleteCompany(companyId));
+        assertEquals(500, exception.getStatusCode());
+        verify(companyRepository).existsById(companyId);
+        verify(companyRepository, never()).deleteById(any());
     }
 
     @Test
@@ -160,10 +279,38 @@ class CompanyServiceImplTest {
     }
 
     @Test
-    void findCompaniesWithHighSalaryEmployeesNative_shouldReturnCompanies() {
-        // Настройка тестовых данных
-        BigDecimal salary = new BigDecimal("10000.00");
+    void findEmployeesByDepartment_shouldThrowHttpStatusExceptionForNullCompanyId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.findEmployeesByDepartment(null, "IT"));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findEmployeesByDepartmentName(any(), any());
+    }
 
+    @Test
+    void findEmployeesByDepartment_shouldThrowHttpStatusExceptionForNullDepartmentName() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.findEmployeesByDepartment(1L, null));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findEmployeesByDepartmentName(any(), any());
+    }
+
+    @Test
+    void findEmployeesByDepartment_shouldThrowHttpStatusExceptionForEmptyDepartmentName() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.findEmployeesByDepartment(1L, ""));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findEmployeesByDepartmentName(any(), any());
+    }
+
+    @Test
+    void findEmployeesByDepartment_shouldThrowHttpStatusExceptionOnError() {
+        when(companyRepository.findEmployeesByDepartmentName(1L, "IT")).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.findEmployeesByDepartment(1L, "IT"));
+        assertEquals(500, exception.getStatusCode());
+        verify(companyRepository).findEmployeesByDepartmentName(1L, "IT");
+    }
+
+    @Test
+    void findCompaniesWithHighSalaryEmployeesNative_shouldReturnCompanies() {
+        BigDecimal salary = new BigDecimal("10000.00");
         Company company = new Company();
         company.setName("Acme Corp");
         List<Company> companies = Collections.singletonList(company);
@@ -171,21 +318,36 @@ class CompanyServiceImplTest {
         CompanyDto companyDto = new CompanyDto();
         companyDto.setName("Acme Corp");
 
-        // Настройка моков
         when(companyRepository.findCompaniesWithHighSalaryEmployeesNative(salary)).thenReturn(companies);
         when(companyMapper.toDto(company)).thenReturn(companyDto);
 
-        // Выполнение метода
         List<CompanyDto> result = companyService.findCompaniesWithHighSalaryEmployeesNative(salary);
 
-        // Проверки
         assertNotNull(result, "Result list should not be null");
         assertEquals(1, result.size(), "Result list should contain 1 company");
         assertNotNull(result.get(0), "First company should not be null");
         assertEquals("Acme Corp", result.get(0).getName(), "Company name should match");
 
-        // Проверка вызовов
         verify(companyRepository).findCompaniesWithHighSalaryEmployeesNative(salary);
         verify(companyMapper).toDto(company);
+    }
+
+    @Test
+    void findCompaniesWithHighSalaryEmployeesNative_shouldThrowHttpStatusExceptionForNullSalary() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.findCompaniesWithHighSalaryEmployeesNative(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(companyRepository, never()).findCompaniesWithHighSalaryEmployeesNative(any());
+        verify(companyMapper, never()).toDto(any());
+    }
+
+    @Test
+    void findCompaniesWithHighSalaryEmployeesNative_shouldThrowHttpStatusExceptionOnError() {
+        BigDecimal salary = new BigDecimal("10000.00");
+        when(companyRepository.findCompaniesWithHighSalaryEmployeesNative(salary)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> companyService.findCompaniesWithHighSalaryEmployeesNative(salary));
+        assertEquals(500, exception.getStatusCode());
+        verify(companyRepository).findCompaniesWithHighSalaryEmployeesNative(salary);
+        verify(companyMapper, never()).toDto(any());
     }
 }

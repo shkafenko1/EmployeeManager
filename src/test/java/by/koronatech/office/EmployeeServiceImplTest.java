@@ -3,8 +3,7 @@ package by.koronatech.office;
 import by.koronatech.office.api.dto.CreateEmployeeDto;
 import by.koronatech.office.api.dto.EmployeeDto;
 import by.koronatech.office.api.dto.UpdateDto;
-import by.koronatech.office.core.exceptions.EntityNotFound;
-import by.koronatech.office.core.mapper.EmployeeMapper;
+import by.koronatech.office.core.exceptions.HttpStatusException;
 import by.koronatech.office.core.model.Department;
 import by.koronatech.office.core.model.Employee;
 import by.koronatech.office.core.model.EmployeeDepartment;
@@ -17,13 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.Errors;
-import org.springframework.validation.FieldError;
 import org.springframework.validation.Validator;
 
 import java.math.BigDecimal;
@@ -43,9 +40,6 @@ class EmployeeServiceImplTest {
     private DepartmentRepository departmentRepository;
 
     @Mock
-    private EmployeeMapper employeeMapper;
-
-    @Mock
     private Validator validator;
 
     @InjectMocks
@@ -55,6 +49,7 @@ class EmployeeServiceImplTest {
     private Department department;
     private CreateEmployeeDto createEmployeeDto;
     private UpdateDto updateDto;
+    private EmployeeDto employeeDto;
 
     @BeforeEach
     void setUp() {
@@ -84,6 +79,14 @@ class EmployeeServiceImplTest {
         updateDto.setName("Jane Doe");
         updateDto.setSalary(new BigDecimal("6000.00"));
         updateDto.setManager(false);
+
+        employeeDto = EmployeeDto.builder()
+                .id(1L)
+                .name("Jane Doe")
+                .salary(new BigDecimal("6000.00"))
+                .manager(false)
+                .departmentNames(Collections.singletonList("IT"))
+                .build();
     }
 
     @Test
@@ -99,9 +102,19 @@ class EmployeeServiceImplTest {
     }
 
     @Test
+    void getAllEmployees_shouldThrowHttpStatusExceptionOnError() {
+        when(employeeRepository.findAll()).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.getAllEmployees());
+        assertEquals(500, exception.getStatusCode());
+        verify(employeeRepository).findAll();
+    }
+
+    @Test
     void createEmployee_shouldCreateAndReturnEmployee() {
         when(departmentRepository.findByName("IT")).thenReturn(Optional.of(department));
         when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
+        doNothing().when(validator).validate(any(), any());
 
         EmployeeDto result = employeeService.createEmployee(createEmployeeDto);
 
@@ -110,20 +123,60 @@ class EmployeeServiceImplTest {
         assertTrue(result.isManager());
         verify(departmentRepository).findByName("IT");
         verify(employeeRepository).save(any(Employee.class));
+        verify(validator).validate(any(), any());
     }
 
     @Test
-    void createEmployee_shouldThrowEntityNotFoundForInvalidDepartment() {
-        when(departmentRepository.findByName("IT")).thenReturn(Optional.empty());
+    void createEmployee_shouldThrowHttpStatusExceptionForNullDto() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.createEmployee(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(departmentRepository, never()).findByName(any());
+        verify(employeeRepository, never()).save(any());
+        verify(validator, never()).validate(any(), any());
+    }
 
-        assertThrows(EntityNotFound.class, () -> employeeService.createEmployee(createEmployeeDto));
+    @Test
+    void createEmployee_shouldThrowHttpStatusExceptionForInvalidDepartment() {
+        when(departmentRepository.findByName("IT")).thenReturn(Optional.empty());
+        doNothing().when(validator).validate(any(), any());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.createEmployee(createEmployeeDto));
+        assertEquals(404, exception.getStatusCode());
         verify(departmentRepository).findByName("IT");
         verify(employeeRepository, never()).save(any(Employee.class));
+        verify(validator).validate(any(), any());
+    }
+
+    @Test
+    void createEmployee_shouldThrowHttpStatusExceptionForValidationErrors() {
+        doAnswer(invocation -> {
+            Errors errors = invocation.getArgument(1);
+            errors.rejectValue("name", "name.empty", "Name cannot be empty");
+            return null;
+        }).when(validator).validate(any(), any());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.createEmployee(createEmployeeDto));
+        assertEquals(400, exception.getStatusCode());
+        verify(validator).validate(any(), any());
+        verify(departmentRepository, never()).findByName(any());
+        verify(employeeRepository, never()).save(any());
+    }
+
+    @Test
+    void createEmployee_shouldThrowHttpStatusExceptionOnError() {
+        when(departmentRepository.findByName("IT")).thenReturn(Optional.of(department));
+        when(employeeRepository.save(any(Employee.class))).thenThrow(new RuntimeException("Database error"));
+        doNothing().when(validator).validate(any(), any());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.createEmployee(createEmployeeDto));
+        assertEquals(500, exception.getStatusCode());
+        verify(departmentRepository).findByName("IT");
+        verify(employeeRepository).save(any(Employee.class));
+        verify(validator).validate(any(), any());
     }
 
     @Test
     void bulkCreateEmployees_shouldCreateValidAndReturnErrorsForInvalid() {
-        // Настройка тестовых данных
         CreateEmployeeDto validDto = new CreateEmployeeDto();
         validDto.setName("John Doe");
         validDto.setSalary(new BigDecimal("5000.00"));
@@ -137,7 +190,6 @@ class EmployeeServiceImplTest {
 
         List<CreateEmployeeDto> dtos = Arrays.asList(validDto, invalidDto);
 
-        // Мокирование валидатора
         doAnswer(invocation -> {
             CreateEmployeeDto dto = invocation.getArgument(0);
             Errors errors = invocation.getArgument(1);
@@ -153,20 +205,11 @@ class EmployeeServiceImplTest {
             return null;
         }).when(validator).validate(any(), any());
 
-        // Мокирование репозиториев
-        Department department = new Department();
-        department.setId(1L);
-        department.setName("IT");
         when(departmentRepository.findByName("IT")).thenReturn(Optional.of(department));
-        Employee employee = new Employee();
-        employee.setId(1L);
-        employee.setName("John Doe");
         when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
 
-        // Выполнение метода
         Map<String, Object> result = employeeService.bulkCreateEmployees(dtos);
 
-        // Проверки
         List<EmployeeDto> created = (List<EmployeeDto>) result.get("created");
         Map<String, Map<String, String>> errors = (Map<String, Map<String, String>>) result.get("errors");
 
@@ -179,6 +222,9 @@ class EmployeeServiceImplTest {
         assertEquals("Name cannot be empty", errorMap.get("name"));
         assertEquals("Salary must be positive", errorMap.get("salary"));
         assertEquals("Cannot have more than 5 departments", errorMap.get("departmentNames"));
+        verify(departmentRepository).findByName("IT");
+        verify(employeeRepository).save(any(Employee.class));
+        verify(validator, times(2)).validate(any(), any());
     }
 
     @Test
@@ -208,6 +254,7 @@ class EmployeeServiceImplTest {
         verify(departmentRepository).findByName("IT");
         verify(departmentRepository).findByName("Nonexistent");
         verify(employeeRepository).save(any(Employee.class));
+        verify(validator, times(2)).validate(any(), any());
     }
 
     @Test
@@ -222,7 +269,7 @@ class EmployeeServiceImplTest {
         assertTrue(created.isEmpty(), "Created list should be empty");
         assertNotNull(errors, "Errors map should not be null");
         assertTrue(errors.isEmpty(), "Errors map should be empty");
-        verifyNoInteractions(validator, employeeRepository, employeeMapper);
+        verifyNoInteractions(validator, employeeRepository, departmentRepository);
     }
 
     @Test
@@ -232,14 +279,10 @@ class EmployeeServiceImplTest {
         dto.setSalary(new BigDecimal("-5000.00"));
         List<CreateEmployeeDto> dtos = Collections.singletonList(dto);
 
-        BeanPropertyBindingResult validationErrors = new BeanPropertyBindingResult(dto, "employeeDto");
-        validationErrors.rejectValue("salary", "salary.negative", "Salary must be positive");
-        validationErrors.rejectValue("name", "name.invalid", null);
-
         doAnswer(invocation -> {
-            BeanPropertyBindingResult errors = invocation.getArgument(1);
-            errors.addError(new FieldError("employeeDto", "salary", "Salary must be positive"));
-            errors.addError(new FieldError("employeeDto", "name", null));
+            Errors errors = invocation.getArgument(1);
+            errors.rejectValue("salary", "salary.negative", "Salary must be positive");
+            errors.rejectValue("name", "name.invalid", null);
             return null;
         }).when(validator).validate(eq(dto), any(BeanPropertyBindingResult.class));
 
@@ -252,7 +295,7 @@ class EmployeeServiceImplTest {
         assertEquals("Salary must be positive", errors.get("John Doe").get("salary"));
         assertEquals("Validation error", errors.get("John Doe").get("name"));
         verify(validator).validate(eq(dto), any(BeanPropertyBindingResult.class));
-        verifyNoInteractions(employeeRepository, employeeMapper);
+        verifyNoInteractions(employeeRepository, departmentRepository);
     }
 
     @Test
@@ -262,36 +305,38 @@ class EmployeeServiceImplTest {
         dto.setSalary(new BigDecimal("5000.00"));
         List<CreateEmployeeDto> dtos = Collections.singletonList(dto);
 
-        BeanPropertyBindingResult validationErrors = new BeanPropertyBindingResult(dto, "employeeDto");
-        validationErrors.rejectValue("name", "name.null", "Name cannot be null");
-
         doAnswer(invocation -> {
-            BeanPropertyBindingResult errors = invocation.getArgument(1);
-            errors.addError(new FieldError("employeeDto", "name", "Name cannot be null"));
+            Errors errors = invocation.getArgument(1);
+            errors.rejectValue("name", "name.null", "Name cannot be null");
             return null;
         }).when(validator).validate(eq(dto), any(BeanPropertyBindingResult.class));
 
         Map<String, Object> result = employeeService.bulkCreateEmployees(dtos);
 
-        List<EmployeeDto> created = (List<EmployeeDto>) result.get("created");
-        Map<String, Map<String, String>> errors = (Map<String, Map<String, String>>) result.get("errors");
+        List<EmployeeDto> created =
+                (List<EmployeeDto>) result.get("created");
+        Map<String, Map<String, String>> errors =
+                (Map<String, Map<String, String>>) result.get("errors");
         assertTrue(created.isEmpty(), "Created list should be empty");
         assertEquals(1, errors.size(), "Errors map should contain 1 entry");
-        assertTrue(errors.containsKey("unknown_" + errors.keySet().iterator().next().split("_")[1]), "Key should be UUID");
+        assertTrue(errors.keySet().iterator().next().startsWith("unknown_"), "Key should start with 'unknown_'");
         assertEquals("Name cannot be null", errors.values().iterator().next().get("name"));
         verify(validator).validate(eq(dto), any(BeanPropertyBindingResult.class));
-        verifyNoInteractions(employeeRepository, employeeMapper);
+        verifyNoInteractions(employeeRepository, departmentRepository);
     }
 
     @Test
-    void bulkCreateEmployees_shouldHandleEntityNotFound() {
+    void bulkCreateEmployees_shouldHandleGeneralException() {
         CreateEmployeeDto dto = new CreateEmployeeDto();
         dto.setName("John Doe");
         dto.setSalary(new BigDecimal("5000.00"));
+        dto.setDepartmentNames(Collections.singletonList("IT"));
         List<CreateEmployeeDto> dtos = Collections.singletonList(dto);
 
-        System.out.println("EmployeeMapper mock: " + employeeMapper); // Debug: Should print Mockito mock
-        doNothing().when(validator).validate(any(), any(BeanPropertyBindingResult.class));
+        doNothing().when(validator).validate(any(), any());
+        when(departmentRepository.findByName("IT")).thenReturn(Optional.of(department));
+        when(employeeRepository.save(any(Employee.class)))
+                .thenThrow(new RuntimeException("Database error"));
 
         Map<String, Object> result = employeeService.bulkCreateEmployees(dtos);
 
@@ -299,9 +344,11 @@ class EmployeeServiceImplTest {
         Map<String, Map<String, String>> errors = (Map<String, Map<String, String>>) result.get("errors");
         assertTrue(created.isEmpty(), "Created list should be empty");
         assertEquals(1, errors.size(), "Errors map should contain 1 entry");
-        verify(validator).validate(any(), any(BeanPropertyBindingResult.class));
+        assertEquals("Failed to create employee: Database error", errors.get("John Doe").get("general"));
+        verify(validator).validate(any(), any());
+        verify(departmentRepository).findByName("IT");
+        verify(employeeRepository).save(any(Employee.class));
     }
-
 
     @Test
     void findAllEmployeesByDepartment_shouldReturnEmployees() {
@@ -317,9 +364,41 @@ class EmployeeServiceImplTest {
     }
 
     @Test
+    void findAllEmployeesByDepartment_shouldThrowHttpStatusExceptionForNullDepartment() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.findAllEmployeesByDepartment(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(employeeRepository, never()).findByEmployeeDepartmentsDepartmentName(any(), any());
+    }
+
+    @Test
+    void findAllEmployeesByDepartment_shouldThrowHttpStatusExceptionForEmptyDepartment() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.findAllEmployeesByDepartment(""));
+        assertEquals(400, exception.getStatusCode());
+        verify(employeeRepository, never()).findByEmployeeDepartmentsDepartmentName(any(), any());
+    }
+
+    @Test
+    void findAllEmployeesByDepartment_shouldThrowHttpStatusExceptionOnError() {
+        when(employeeRepository.findByEmployeeDepartmentsDepartmentName("IT", PageRequest.of(0, Integer.MAX_VALUE)))
+                .thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.findAllEmployeesByDepartment("IT"));
+        assertEquals(500, exception.getStatusCode());
+        verify(employeeRepository).findByEmployeeDepartmentsDepartmentName("IT", PageRequest.of(0, Integer.MAX_VALUE));
+    }
+
+    @Test
     void updateEmployee_shouldUpdateAndReturnEmployee() {
+        Employee updatedEmployee = Employee.builder()
+                .id(1L)
+                .name("Jane Doe")
+                .salary(new BigDecimal("6000.00"))
+                .manager(false)
+                .employeeDepartments(employee.getEmployeeDepartments())
+                .build();
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
-        when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
+        when(employeeRepository.save(any(Employee.class))).thenReturn(updatedEmployee);
+        doNothing().when(validator).validate(any(), any());
 
         EmployeeDto result = employeeService.updateEmployee(1L, updateDto);
 
@@ -328,15 +407,64 @@ class EmployeeServiceImplTest {
         assertFalse(result.isManager());
         verify(employeeRepository).findById(1L);
         verify(employeeRepository).save(any(Employee.class));
+        verify(validator).validate(any(), any());
     }
 
     @Test
-    void updateEmployee_shouldThrowEntityNotFoundForInvalidId() {
-        when(employeeRepository.findById(1L)).thenReturn(Optional.empty());
+    void updateEmployee_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.updateEmployee(null, updateDto));
+        assertEquals(400, exception.getStatusCode());
+        verify(employeeRepository, never()).findById(any());
+        verify(employeeRepository, never()).save(any());
+        verify(validator, never()).validate(any(), any());
+    }
 
-        assertThrows(EntityNotFound.class, () -> employeeService.updateEmployee(1L, updateDto));
+    @Test
+    void updateEmployee_shouldThrowHttpStatusExceptionForNullDto() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.updateEmployee(1L, null));
+        assertEquals(400, exception.getStatusCode());
+        verify(employeeRepository, never()).findById(any());
+        verify(employeeRepository, never()).save(any());
+        verify(validator, never()).validate(any(), any());
+    }
+
+    @Test
+    void updateEmployee_shouldThrowHttpStatusExceptionForInvalidId() {
+        when(employeeRepository.findById(1L)).thenReturn(Optional.empty());
+        doNothing().when(validator).validate(any(), any());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.updateEmployee(1L, updateDto));
+        assertEquals(404, exception.getStatusCode());
         verify(employeeRepository).findById(1L);
         verify(employeeRepository, never()).save(any(Employee.class));
+        verify(validator).validate(any(), any());
+    }
+
+    @Test
+    void updateEmployee_shouldThrowHttpStatusExceptionForValidationErrors() {
+        doAnswer(invocation -> {
+            Errors errors = invocation.getArgument(1);
+            errors.rejectValue("name", "name.empty", "Name cannot be empty");
+            return null;
+        }).when(validator).validate(any(), any());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.updateEmployee(1L, updateDto));
+        assertEquals(400, exception.getStatusCode());
+        verify(validator).validate(any(), any());
+        verify(employeeRepository, never()).findById(any());
+        verify(employeeRepository, never()).save(any());
+    }
+
+    @Test
+    void updateEmployee_shouldThrowHttpStatusExceptionOnError() {
+        when(employeeRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
+        doNothing().when(validator).validate(any(), any());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.updateEmployee(1L, updateDto));
+        assertEquals(500, exception.getStatusCode());
+        verify(employeeRepository).findById(1L);
+        verify(employeeRepository, never()).save(any());
+        verify(validator).validate(any(), any());
     }
 
     @Test
@@ -351,12 +479,31 @@ class EmployeeServiceImplTest {
     }
 
     @Test
-    void deleteEmployee_shouldThrowEntityNotFound() {
+    void deleteEmployee_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.deleteEmployee(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(employeeRepository, never()).existsById(any());
+        verify(employeeRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteEmployee_shouldThrowHttpStatusExceptionForNotFound() {
         when(employeeRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(EntityNotFound.class, () -> employeeService.deleteEmployee(1L));
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.deleteEmployee(1L));
+        assertEquals(404, exception.getStatusCode());
         verify(employeeRepository).existsById(1L);
         verify(employeeRepository, never()).deleteById(1L);
+    }
+
+    @Test
+    void deleteEmployee_shouldThrowHttpStatusExceptionOnError() {
+        when(employeeRepository.existsById(1L)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.deleteEmployee(1L));
+        assertEquals(500, exception.getStatusCode());
+        verify(employeeRepository).existsById(1L);
+        verify(employeeRepository, never()).deleteById(any());
     }
 
     @Test
@@ -371,10 +518,27 @@ class EmployeeServiceImplTest {
     }
 
     @Test
-    void findEmployeeById_shouldThrowEntityNotFound() {
+    void findEmployeeById_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.findEmployeeById(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(employeeRepository, never()).findById(any());
+    }
+
+    @Test
+    void findEmployeeById_shouldThrowHttpStatusExceptionForNotFound() {
         when(employeeRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFound.class, () -> employeeService.findEmployeeById(1L));
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.findEmployeeById(1L));
+        assertEquals(404, exception.getStatusCode());
+        verify(employeeRepository).findById(1L);
+    }
+
+    @Test
+    void findEmployeeById_shouldThrowHttpStatusExceptionOnError() {
+        when(employeeRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> employeeService.findEmployeeById(1L));
+        assertEquals(500, exception.getStatusCode());
         verify(employeeRepository).findById(1L);
     }
 }

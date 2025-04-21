@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
 
@@ -128,7 +127,7 @@ public class EmployeeController {
             @PathVariable @Positive(message = "ID must be positive") Long id) {
         employeeService.deleteEmployee(id);
     }
-
+    
     @GetMapping("/{id}")
     @Operation(summary = "Получить сотрудника по ID",
             description = "Возвращает данные сотрудника по его ID.")

@@ -56,7 +56,7 @@ public class LogController {
             Path filePath = Paths.get(fileName);
 
             if (!Files.exists(filePath)) {
-                logger.warn("Log file not found for date: {}", date);
+                logger.error("(HTTP 404)Log file not found for date: {}", date);
                 return ResponseEntity.notFound().build();
             }
 
@@ -74,10 +74,10 @@ public class LogController {
                     .body(resource);
 
         } catch (DateTimeParseException e) {
-            logger.warn("Invalid date format: {}", date);
+            logger.error("(HTTP 400)Invalid date format: {}", date);
             return ResponseEntity.badRequest().body(null);
         } catch (IOException e) {
-            logger.error("Error reading log file for date: {}", date, e);
+            logger.error("Error reading log file (HTTP 500) for date: {}", date, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

@@ -2,6 +2,7 @@ package by.koronatech.office;
 
 import by.koronatech.office.api.dto.DepartmentDto;
 import by.koronatech.office.core.exceptions.EntityNotFound;
+import by.koronatech.office.core.exceptions.HttpStatusException;
 import by.koronatech.office.core.mapper.DepartmentMapper;
 import by.koronatech.office.core.model.Company;
 import by.koronatech.office.core.model.Department;
@@ -71,6 +72,16 @@ class DepartmentServiceImplTest {
     }
 
     @Test
+    void getAllDepartments_shouldThrowHttpStatusExceptionOnError() {
+        when(departmentRepository.findAll()).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.getAllDepartments());
+        assertEquals(500, exception.getStatusCode());
+        verify(departmentRepository).findAll();
+        verify(departmentMapper, never()).toDtos(any());
+    }
+
+    @Test
     void getDepartmentById_shouldReturnDepartment() {
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
         when(departmentMapper.toDto(department)).thenReturn(departmentDto);
@@ -83,10 +94,29 @@ class DepartmentServiceImplTest {
     }
 
     @Test
-    void getDepartmentById_shouldThrowEntityNotFound() {
+    void getDepartmentById_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.getDepartmentById(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(departmentRepository, never()).findById(any());
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void getDepartmentById_shouldThrowHttpStatusExceptionForNotFound() {
         when(departmentRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFound.class, () -> departmentService.getDepartmentById(1L));
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.getDepartmentById(1L));
+        assertEquals(404, exception.getStatusCode());
+        verify(departmentRepository).findById(1L);
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void getDepartmentById_shouldThrowHttpStatusExceptionOnError() {
+        when(departmentRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.getDepartmentById(1L));
+        assertEquals(500, exception.getStatusCode());
         verify(departmentRepository).findById(1L);
         verify(departmentMapper, never()).toDto(any());
     }
@@ -106,6 +136,38 @@ class DepartmentServiceImplTest {
     }
 
     @Test
+    void createDepartment_shouldThrowHttpStatusExceptionForNullDto() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.createDepartment(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(departmentMapper, never()).toEntity(any(), any());
+        verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void createDepartment_shouldThrowHttpStatusExceptionForEntityNotFound() {
+        when(departmentMapper.toEntity(departmentDto, companyRepository)).thenThrow(new EntityNotFound("Company not found"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.createDepartment(departmentDto));
+        assertEquals(404, exception.getStatusCode());
+        verify(departmentMapper).toEntity(departmentDto, companyRepository);
+        verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void createDepartment_shouldThrowHttpStatusExceptionOnError() {
+        when(departmentMapper.toEntity(departmentDto, companyRepository)).thenReturn(department);
+        when(departmentRepository.save(department)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.createDepartment(departmentDto));
+        assertEquals(500, exception.getStatusCode());
+        verify(departmentMapper).toEntity(departmentDto, companyRepository);
+        verify(departmentRepository).save(department);
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
     void updateDepartment_shouldUpdateAndReturnDepartment() {
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
         when(companyRepository.findByName("Test Company")).thenReturn(Optional.of(company));
@@ -122,32 +184,102 @@ class DepartmentServiceImplTest {
     }
 
     @Test
-    void updateDepartment_shouldThrowEntityNotFoundForInvalidDepartment() {
-        when(departmentRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFound.class, () -> departmentService.updateDepartment(1L, departmentDto));
-        verify(departmentRepository).findById(1L);
+    void updateDepartment_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.updateDepartment(null, departmentDto));
+        assertEquals(400, exception.getStatusCode());
+        verify(departmentRepository, never()).findById(any());
         verify(companyRepository, never()).findByName(any());
         verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
     }
 
     @Test
-    void updateDepartment_shouldThrowEntityNotFoundForInvalidCompany() {
+    void updateDepartment_shouldThrowHttpStatusExceptionForNullDto() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.updateDepartment(1L, null));
+        assertEquals(400, exception.getStatusCode());
+        verify(departmentRepository, never()).findById(any());
+        verify(companyRepository, never()).findByName(any());
+        verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void updateDepartment_shouldThrowHttpStatusExceptionForInvalidDepartment() {
+        when(departmentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.updateDepartment(1L, departmentDto));
+        assertEquals(404, exception.getStatusCode());
+        verify(departmentRepository).findById(1L);
+        verify(companyRepository, never()).findByName(any());
+        verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void updateDepartment_shouldThrowHttpStatusExceptionForInvalidCompany() {
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
         when(companyRepository.findByName("Test Company")).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFound.class, () -> departmentService.updateDepartment(1L, departmentDto));
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.updateDepartment(1L, departmentDto));
+        assertEquals(404, exception.getStatusCode());
         verify(departmentRepository).findById(1L);
         verify(companyRepository).findByName("Test Company");
         verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
+    }
+
+    @Test
+    void updateDepartment_shouldThrowHttpStatusExceptionOnError() {
+        when(departmentRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.updateDepartment(1L, departmentDto));
+        assertEquals(500, exception.getStatusCode());
+        verify(departmentRepository).findById(1L);
+        verify(companyRepository, never()).findByName(any());
+        verify(departmentRepository, never()).save(any());
+        verify(departmentMapper, never()).toDto(any());
     }
 
     @Test
     void deleteDepartment_shouldDeleteDepartment() {
-        doNothing().when(departmentRepository).deleteById(1L);
+        Long departmentId = 1L;
+        when(departmentRepository.existsById(departmentId)).thenReturn(true);
+        doNothing().when(departmentRepository).deleteById(departmentId);
 
-        departmentService.deleteDepartment(1L);
+        departmentService.deleteDepartment(departmentId);
 
-        verify(departmentRepository).deleteById(1L);
+        verify(departmentRepository).existsById(departmentId);
+        verify(departmentRepository).deleteById(departmentId);
+        verifyNoMoreInteractions(departmentRepository);
+    }
+
+    @Test
+    void deleteDepartment_shouldThrowHttpStatusExceptionForNullId() {
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.deleteDepartment(null));
+        assertEquals(400, exception.getStatusCode());
+        verify(departmentRepository, never()).existsById(any());
+        verify(departmentRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteDepartment_shouldThrowHttpStatusExceptionForNotFound() {
+        Long departmentId = 1L;
+        when(departmentRepository.existsById(departmentId)).thenReturn(false);
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.deleteDepartment(departmentId));
+        assertEquals(404, exception.getStatusCode());
+        verify(departmentRepository).existsById(departmentId);
+        verify(departmentRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteDepartment_shouldThrowHttpStatusExceptionOnError() {
+        Long departmentId = 1L;
+        when(departmentRepository.existsById(departmentId)).thenThrow(new RuntimeException("Database error"));
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> departmentService.deleteDepartment(departmentId));
+        assertEquals(500, exception.getStatusCode());
+        verify(departmentRepository).existsById(departmentId);
+        verify(departmentRepository, never()).deleteById(any());
     }
 }
