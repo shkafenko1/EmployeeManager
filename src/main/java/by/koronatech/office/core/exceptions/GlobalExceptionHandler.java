@@ -5,7 +5,6 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,15 +21,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpStatusException.class)
     public ResponseEntity<String> handleHttpStatusException(HttpStatusException e) {
-        logger.error("Handling HttpStatusException (HTTP {}): {}", e.getStatusCode(), e.getMessage(), e);
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.valueOf(e.getStatusCode()));
+        logger.error("Handling HttpStatusException (HTTP {}): {}",
+                e.getStatusCode(), e.getMessage(), e);
+        return new ResponseEntity<>(e.getMessage(),
+                HttpStatus.valueOf(e.getStatusCode()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            String message = error.getDefaultMessage() != null ? error.getDefaultMessage() : "Validation error";
+            String message = error.getDefaultMessage()
+                    != null ? error.getDefaultMessage() : "Validation error";
             errors.put(error.getField(), message);
         }
         logger.error("Validation error (HTTP 400): {}", errors);
@@ -38,7 +41,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, String>> handleConstraintViolation(ConstraintViolationException ex) {
+    public ResponseEntity<Map<String, String>> handleConstraintViolation(
+            ConstraintViolationException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getConstraintViolations().forEach(violation ->
                 errors.put(violation.getPropertyPath().toString(), violation.getMessage())
@@ -62,6 +66,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGenericException(Exception ex) {
         logger.error("Unexpected error (HTTP 500): {}", ex.getMessage(), ex);
-        return new ResponseEntity<>("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>("Internal server error",
+                HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

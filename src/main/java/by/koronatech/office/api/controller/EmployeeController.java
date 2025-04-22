@@ -15,13 +15,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/employee")
@@ -42,15 +42,35 @@ public class EmployeeController {
         return employeeService.getAllEmployees();
     }
 
+    @PostMapping("/bulk")
+    @Operation(summary = "Массовое создание сотрудников",
+            description = "Создает несколько сотрудников за один запрос. "
+                    + "Возвращает список успешно созданных сотрудников и ошибки валидации.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Результаты обработки сотрудников",
+                content = @Content(mediaType = "application/json",
+                        schema = @Schema(implementation = Map.class))),
+        @ApiResponse(responseCode = "400", description = "Некорректные данные в запросе")
+    })
+    public ResponseEntity<Map<String, Object>> bulkCreateEmployees(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Список данных для создания сотрудников", required = true,
+                    content = @Content(array = @ArraySchema(
+                            schema = @Schema(implementation = CreateEmployeeDto.class))))
+            @Valid @RequestBody List<CreateEmployeeDto> employeeDtos) {
+        Map<String, Object> result = employeeService.bulkCreateEmployees(employeeDtos);
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Создать нового сотрудника",
             description = "Создает нового сотрудника с указанными данными.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Сотрудник успешно создан",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmployeeDto.class))),
-            @ApiResponse(responseCode = "400", description = "Некорректные данные")
+        @ApiResponse(responseCode = "201", description = "Сотрудник успешно создан",
+                content = @Content(mediaType = "application/json",
+                        schema = @Schema(implementation = EmployeeDto.class))),
+        @ApiResponse(responseCode = "400", description = "Некорректные данные")
     })
     public EmployeeDto createEmployee(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -60,36 +80,21 @@ public class EmployeeController {
         return employeeService.createEmployee(employeeDto);
     }
 
-    @PostMapping("/bulk")
-    @Operation(summary = "Массовое создание сотрудников",
-            description = "Создает несколько сотрудников за один запрос. Возвращает список успешно созданных сотрудников и ошибки валидации.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Результаты обработки сотрудников",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Map.class))),
-            @ApiResponse(responseCode = "400", description = "Некорректные данные в запросе")
-    })
-    public ResponseEntity<Map<String, Object>> bulkCreateEmployees(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Список данных для создания сотрудников", required = true,
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CreateEmployeeDto.class))))
-            @Valid @RequestBody List<CreateEmployeeDto> employeeDtos) {
-        Map<String, Object> result = employeeService.bulkCreateEmployees(employeeDtos);
-        return ResponseEntity.ok(result);
-    }
-
     @GetMapping(params = "department")
     @Operation(summary = "Найти сотрудников по отделу",
             description = "Возвращает сотрудников в указанном отделе.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Сотрудники найдены",
-                    content = @Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = EmployeeDto.class)))),
-            @ApiResponse(responseCode = "400", description = "Некорректное название отдела")
+        @ApiResponse(responseCode = "200", description = "Сотрудники найдены",
+                content = @Content(mediaType = "application/json",
+                        array = @ArraySchema(schema =
+                        @Schema(implementation = EmployeeDto.class)))),
+        @ApiResponse(responseCode = "400",
+                description = "Некорректное название отдела")
     })
     public List<EmployeeDto> findAllEmployeesByDepartment(
             @Parameter(description = "Название отдела", required = true, example = "Разработка")
-            @RequestParam("department") @NotBlank(message = "Department name cannot be empty") String department) {
+            @RequestParam("department") @NotBlank(
+                    message = "Department name cannot be empty") String department) {
         return employeeService.findAllEmployeesByDepartment(department);
     }
 
@@ -97,11 +102,11 @@ public class EmployeeController {
     @Operation(summary = "Обновить сотрудника",
             description = "Обновляет данные сотрудника по его ID.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Сотрудник успешно обновлен",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmployeeDto.class))),
-            @ApiResponse(responseCode = "400", description = "Некорректные данные или ID"),
-            @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
+        @ApiResponse(responseCode = "200", description = "Сотрудник успешно обновлен",
+                content = @Content(mediaType = "application/json",
+                        schema = @Schema(implementation = EmployeeDto.class))),
+        @ApiResponse(responseCode = "400", description = "Некорректные данные или ID"),
+        @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
     })
     public EmployeeDto updateEmployee(
             @Parameter(description = "ID сотрудника", required = true, example = "1")
@@ -118,9 +123,9 @@ public class EmployeeController {
     @Operation(summary = "Удалить сотрудника",
             description = "Удаляет сотрудника по его ID.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Сотрудник успешно удален"),
-            @ApiResponse(responseCode = "400", description = "Некорректный ID"),
-            @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
+        @ApiResponse(responseCode = "204", description = "Сотрудник успешно удален"),
+        @ApiResponse(responseCode = "400", description = "Некорректный ID"),
+        @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
     })
     public void deleteEmployee(
             @Parameter(description = "ID сотрудника", required = true, example = "1")
@@ -132,11 +137,11 @@ public class EmployeeController {
     @Operation(summary = "Получить сотрудника по ID",
             description = "Возвращает данные сотрудника по его ID.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Сотрудник найден",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmployeeDto.class))),
-            @ApiResponse(responseCode = "400", description = "Некорректный ID"),
-            @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
+        @ApiResponse(responseCode = "200", description = "Сотрудник найден",
+                content = @Content(mediaType = "application/json",
+                        schema = @Schema(implementation = EmployeeDto.class))),
+        @ApiResponse(responseCode = "400", description = "Некорректный ID"),
+        @ApiResponse(responseCode = "404", description = "Сотрудник с указанным ID не найден")
     })
     public EmployeeDto findEmployeeById(
             @Parameter(description = "ID сотрудника", required = true, example = "1")
