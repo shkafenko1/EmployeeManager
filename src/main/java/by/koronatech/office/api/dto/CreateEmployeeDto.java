@@ -27,7 +27,6 @@ public class CreateEmployeeDto {
     @Positive(message = "Salary must be positive")
     private BigDecimal salary;
 
-    @Size(max = 5, message = "Cannot have more than 5 departments")
     private List<@NotBlank(message = "Department name cannot be empty") String> departmentNames;
 
     private boolean manager = false; // Default value

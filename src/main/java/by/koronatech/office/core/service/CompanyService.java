@@ -1,14 +1,15 @@
 package by.koronatech.office.core.service;
 
 import by.koronatech.office.api.dto.CompanyDto;
+import by.koronatech.office.api.dto.CompanyReturnDto;
 import by.koronatech.office.api.dto.EmployeeDto;
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface CompanyService {
-    List<CompanyDto> getAllCompanies();
+    List<CompanyReturnDto> getAllCompanies();
 
-    CompanyDto getCompanyById(Long id);
+    CompanyReturnDto getCompanyById(Long id);
 
     CompanyDto createCompany(CompanyDto companyDto);
 
@@ -18,5 +19,5 @@ public interface CompanyService {
 
     List<EmployeeDto> findEmployeesByDepartment(Long companyId, String departmentName);
 
-    List<CompanyDto> findCompaniesWithHighSalaryEmployeesNative(BigDecimal salary);
+    List<CompanyReturnDto> findCompaniesWithHighSalaryEmployeesNative(BigDecimal salary);
 }

@@ -1,6 +1,7 @@
 package by.koronatech.office.api.controller;
 
 import by.koronatech.office.api.dto.DepartmentDto;
+import by.koronatech.office.api.dto.DepartmentReturnDto;
 import by.koronatech.office.core.service.DepartmentService;
 import by.koronatech.office.core.service.impl.EmployeeServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,27 +35,22 @@ public class DepartmentController {
     @GetMapping
     @Operation(summary = "Получить список всех отделов",
             description = "Возвращает список всех существующих отделов.")
-
     @ApiResponse(responseCode = "200", description = "Список отделов успешно получен",
             content = @Content(mediaType = "application/json",
-                    array = @ArraySchema(schema = @Schema(implementation = DepartmentDto.class))))
-
-    public List<DepartmentDto> getAllDepartments() {
+                    array = @ArraySchema(schema = @Schema(implementation = DepartmentReturnDto.class))))
+    public List<DepartmentReturnDto> getAllDepartments() {
         return departmentService.getAllDepartments();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Получить отдел по ID",
-            description =
-                    "Возвращает детальную информацию об отделе по его уникальному идентификатору.")
-
+            description = "Возвращает детальную информацию об отделе по его уникальному идентификатору.")
     @ApiResponse(responseCode = "200", description = "Отдел найден и возвращен",
             content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = DepartmentDto.class)))
+                    schema = @Schema(implementation = DepartmentReturnDto.class)))
     @ApiResponse(responseCode = "400", description = "Некорректный ID")
     @ApiResponse(responseCode = "404", description = "Отдел с указанным ID не найден")
-
-    public DepartmentDto getDepartmentById(
+    public DepartmentReturnDto getDepartmentById(
             @Parameter(description = "ID отдела", required = true, example = "1")
             @PathVariable @Positive(message = "ID must be positive") Long id) {
         return departmentService.getDepartmentById(id);
@@ -62,20 +58,17 @@ public class DepartmentController {
 
     @GetMapping("/unwrap")
     @Operation(summary = "Получить все отделы со списком их сотрудников",
-            description = "Возвращает список всех отделов,"
-                    + " где каждый отдел содержит также список своих сотрудников.")
-
+            description = "Возвращает список всех отделов, где каждый отдел содержит также список своих сотрудников.")
     @ApiResponse(responseCode = "200",
             description = "Список отделов с сотрудниками успешно получен",
             content = @Content(mediaType = "application/json",
-                    schema = @Schema(type = "object",
-                            example = "[{\"department\": {\"id\": 1, \"name\": \"IT\"}, "
+                    schema = @Schema(type = "array",
+                            example = "[{\"department\": {\"id\": 1, \"company\": \"TechCorp\", \"name\": \"IT\"}, "
                                     + "\"employees\": [{\"id\": 101, \"name\": \"John Doe\"}]}]")))
     @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
-
     public ResponseEntity<List<Map<String, Object>>> getAllDepartmentsWithEmployees() {
         try {
-            List<DepartmentDto> departments = departmentService.getAllDepartments();
+            List<DepartmentReturnDto> departments = departmentService.getAllDepartments();
             List<Map<String, Object>> result = departments.stream()
                     .map(dept -> {
                         Map<String, Object> deptWithEmployees = new HashMap<>();
@@ -94,13 +87,11 @@ public class DepartmentController {
     @PostMapping
     @Operation(summary = "Создать новый отдел",
             description = "Создает новую запись об отделе. Требует указания существующей компании.")
-
     @ApiResponse(responseCode = "201", description = "Отдел успешно создан",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = DepartmentDto.class)))
     @ApiResponse(responseCode = "400", description = "Некорректные данные для создания отдела")
     @ApiResponse(responseCode = "404", description = "Связанная компания не найдена")
-
     public ResponseEntity<DepartmentDto> createDepartment(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Данные для создания нового отдела", required = true,
@@ -113,13 +104,11 @@ public class DepartmentController {
     @PutMapping("/{id}")
     @Operation(summary = "Обновить существующий отдел",
             description = "Обновляет информацию о существующем отделе по его ID.")
-
     @ApiResponse(responseCode = "200", description = "Отдел успешно обновлен",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = DepartmentDto.class)))
     @ApiResponse(responseCode = "400", description = "Некорректные данные или ID")
     @ApiResponse(responseCode = "404", description = "Отдел с указанным ID не найден")
-
     public DepartmentDto updateDepartment(
             @Parameter(description = "ID отдела для обновления", required = true, example = "1")
             @PathVariable @Positive(message = "ID must be positive") Long id,
@@ -134,11 +123,9 @@ public class DepartmentController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Удалить отдел",
             description = "Удаляет отдел по его уникальному идентификатору.")
-
     @ApiResponse(responseCode = "204", description = "Отдел успешно удален")
     @ApiResponse(responseCode = "400", description = "Некорректный ID")
     @ApiResponse(responseCode = "404", description = "Отдел с указанным ID не найден")
-
     public void deleteDepartment(
             @Parameter(description = "ID отдела для удаления", required = true, example = "1")
             @PathVariable @Positive(message = "ID must be positive") Long id) {

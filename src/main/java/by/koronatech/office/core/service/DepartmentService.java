@@ -1,12 +1,14 @@
 package by.koronatech.office.core.service;
 
 import by.koronatech.office.api.dto.DepartmentDto;
+import by.koronatech.office.api.dto.DepartmentReturnDto;
+
 import java.util.List;
 
 public interface DepartmentService {
-    List<DepartmentDto> getAllDepartments();
+    List<DepartmentReturnDto> getAllDepartments();
 
-    DepartmentDto getDepartmentById(Long id);
+    DepartmentReturnDto getDepartmentById(Long id);
 
     DepartmentDto createDepartment(DepartmentDto departmentDto);
 
